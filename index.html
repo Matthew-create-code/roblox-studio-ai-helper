@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roblox Studio AI Helper</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #121214; color: #e1e1e6; text-align: center; padding: 15px; margin: 0; }
+        .container { max-width: 550px; margin: 20px auto; background: #1c1c22; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); border: 1px solid #292930; }
+        h2 { color: #00a2ff; margin-top: 0; font-size: 24px; }
+        select, textarea, input { width: 100%; padding: 12px; border: 1px solid #32323f; border-radius: 6px; margin-bottom: 15px; box-sizing: border-box; background-color: #0f0f12; color: #fff; font-size: 14px; }
+        textarea { height: 120px; resize: vertical; }
+        button { background-color: #00a2ff; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-size: 15px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 10px; }
+        button:hover { background-color: #0082cc; }
+        .copy-btn { background-color: #28a745; display: none; }
+        .copy-btn:hover { background-color: #218838; }
+        .output-box { background: #0f0f12; padding: 15px; margin-top: 20px; border-radius: 8px; text-align: left; border-left: 4px solid #00a2ff; font-family: 'Courier New', Courier, monospace; font-size: 13px; white-space: pre-wrap; overflow-x: auto; display: none; }
+        .label { text-align: left; display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; color: #a9a9b3; }
+        .key-link { font-size: 12px; color: #00a2ff; text-decoration: none; float: right; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🤖 Roblox Studio AI Helper</h2>
+    <p>Powered by Google Gemini AI Mode</p>
+    
+    <label class="label">Google AI Studio API Key: 
+        <a class="key-link" href="https://google.com" target="_blank">Get Free Key ↗</a>
+    </label>
+    <input type="password" id="apiKeyInput" placeholder="AIzaSy...">
+
+    <label class="label">Target Roblox Service:</label>
+    <select id="serviceSelect">
+        <option value="Workspace">Workspace (Parts, Physics, Maps)</option>
+        <option value="TextChatService">TextChatService (Custom Commands)</option>
+        <option value="MaterialService">MaterialService (Beta Custom Textures)</option>
+        <option value="StarterGui">StarterGui (Responsive UI Mobile Scale)</option>
+        <option value="ServerScriptService">ServerScriptService (Game Logic/DataStores)</option>
+    </select>
+
+    <label class="label">What Luau script do you need?</label>
+    <textarea id="promptInput" placeholder="Describe your game script features here..."></textarea>
+    
+    <button onclick="askGoogleGemini()">Generate Luau Code</button>
+    <button id="copyBtn" class="copy-btn" onclick="copyToClipboard()">📋 Copy Code to Clipboard</button>
+
+    <div id="output" class="output-box"></div>
+</div>
+
+<script>
+async function askGoogleGemini() {
+    const apiKey = document.getElementById('apiKeyInput').value.trim();
+    const service = document.getElementById('serviceSelect').value;
+    const userPrompt = document.getElementById('promptInput').value.trim();
+    const output = document.getElementById('output');
+    const copyBtn = document.getElementById('copyBtn');
+    
+    if (!apiKey) {
+        alert("Please get and paste a valid Google Gemini API Key first!");
+        return;
+    }
+    if (!userPrompt) {
+        alert("Please write down what script you want the AI to make.");
+        return;
+    }
+
+    output.style.display = "block";
+    copyBtn.style.display = "none";
+    output.innerText = "Connecting to Google AI servers and compiling your Luau script code...";
+
+    const completePrompt = `You are an expert Roblox Studio AI Helper. Generate clean, high-performance Luau code optimized for the ${service} service based on this request: "${userPrompt}". 
+    CRITICAL RULES:
+    1. If making any UI, always use Scale properties (percentages), NEVER use pixel Offset so it renders perfectly on mobile screens.
+    2. Write clear comments explaining what the lines do.
+    3. Output ONLY the raw code block inside clean text. Do not wrap it in markdown backticks.`;
+
+    try {
+        const response = await fetch(`https://googleapis.com{apiKey}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: completePrompt }] }]
+            })
+        });
+
+        const data = await response.json();
+        
+        if (data.candidates && data.candidates[0].content.parts[0].text) {
+            let finalCode = data.candidates[0].content.parts[0].text;
+            // Clean up backticks if the model accidentally included them
+            finalCode = finalCode.replace(/```lua/g, "").replace(/```/g, "").trim();
+            
+            output.innerText = finalCode;
+            copyBtn.style.display = "block";
+        } else {
+            output.innerText = "Error: Invalid response pattern from Google AI. Please check your API Key configurations.";
+            console.error(data);
+        }
+
+    } catch (err) {
+        output.innerText = "Network Failure: Failed to communicate with the Google Gemini AI API endpoints.";
+        console.error(err);
+    }
+}
+
+function copyToClipboard() {
+    const outputText = document.getElementById('output').innerText;
+    navigator.clipboard.writeText(outputText).then(() => {
+        alert("Luau code copied to clipboard successfully!");
+    }).catch(err => {
+        alert("Failed to auto-copy code. Please select and copy manually.");
+    });
+}
+</script>
+
+</body>
+</html>
